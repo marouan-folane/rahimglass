@@ -4,11 +4,11 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 // ─── Security Middleware ──────────────────────────────────────────────────────
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: process.env.FRONTEND_URL || 'https://rahimglass.ma',
     credentials: true,
 }));
 
@@ -75,9 +75,17 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ─── 404 Handler ──────────────────────────────────────────────────────────────
+// ─── 404 Handler for API ──────────────────────────────────────────────────────
 app.use('/api', (req, res) => {
     res.status(404).json({ error: 'Route introuvable' });
+});
+
+// ─── Serve React Frontend (production) ───────────────────────────────────────
+app.use(express.static(path.join(__dirname, '../dist')));
+
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
 // ─── Global Error Handler ─────────────────────────────────────────────────────
@@ -87,13 +95,12 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
-// ─── Start ────────────────────────────────────────────────────────────────────
 const db = require('./db');
 
 db.init().then(() => {
     app.listen(PORT, () => {
         console.log(`\n🚀 RahimGlass API Server running on http://localhost:${PORT}`);
-        console.log(`   Health: http://localhost:${PORT}/api/health`);
+        console.log(`   Health:   http://localhost:${PORT}/api/health`);
         console.log(`   Products: http://localhost:${PORT}/api/products\n`);
     });
 }).catch(err => {
